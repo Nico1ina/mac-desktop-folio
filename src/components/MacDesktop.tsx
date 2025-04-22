@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { MacDock, appOrder } from "./MacDock";
 import { FolderIcon } from "./FolderIcon";
 import { MacWindow } from "./MacWindow";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import TopNavbar from "./TopNavbar";
 
 // Folders list (can extend with more info/content)
