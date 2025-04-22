@@ -4,11 +4,19 @@ import { MacDock, appOrder } from "./MacDock";
 import { FolderIcon } from "./FolderIcon";
 import { MacWindow } from "./MacWindow";
 import { AnimatePresence } from "framer-motion";
+import TopNavbar from "./TopNavbar";
 
+// Folders list (can extend with more info/content)
 const desktopFolders = [
   { label: "Work", content: <div>Work projects, files, and code!</div> },
   { label: "Photos", content: <div>Photo gallery and design shots!</div> },
   { label: "Resume", content: <div><a href="#" className="text-blue-600 underline">Download Resume</a></div> },
+];
+
+const folderInitialPositions = [
+  { top: 120, left: 60 },
+  { top: 250, left: 140 },
+  { top: 160, left: 220 },
 ];
 
 const appContent: Record<string, React.ReactNode> = {
@@ -28,6 +36,8 @@ const appContent: Record<string, React.ReactNode> = {
 
 export const MacDesktop: React.FC = () => {
   const [openWindows, setOpenWindows] = useState<{ type: "app" | "folder", name: string }[]>([]);
+  // Add draggable folder positions
+  const [folderPositions, setFolderPositions] = useState<{top: number, left: number}[]>(folderInitialPositions);
 
   // Bring window to front by reordering
   const openOrFocusWindow = (payload: { type: "app" | "folder", name: string }) => {
@@ -47,25 +57,52 @@ export const MacDesktop: React.FC = () => {
     setOpenWindows((prev) => prev.filter(w => !(w.type === payload.type && w.name === payload.name)));
   };
 
-  // Folder positions, randomized a bit for demo.
-  const folderPositions = [
-    { top: "20%", left: "10%" },
-    { top: "38%", left: "18%" },
-    { top: "24%", left: "24%" },
-  ];
+  // Draggable logic for folders
+  const handleFolderDrag = (i: number, event: any, info: { point: { x: number; y: number } }) => {
+    setFolderPositions((prev) => {
+      const updated = [...prev];
+      // Clamp to desktop area (min 0, max desktop)
+      updated[i] = {
+        top: Math.max(60, Math.min(info.point.y, window.innerHeight - 100)),
+        left: Math.max(12, Math.min(info.point.x, window.innerWidth - 90))
+      }
+      return updated;
+    });
+  };
 
   return (
     <div className="relative min-h-screen w-full bg-gradient-to-br from-blue-100 via-indigo-100 to-purple-100 dark:from-[#1A1F2C] dark:via-[#222438] dark:to-[#31275B] transition-colors duration-500 overflow-hidden">
-      {/* Desktop Folders */}
+      <TopNavbar />
+      {/* Desktop Folders (Draggable) */}
       {desktopFolders.map((folder, i) => (
         <div
           key={folder.label}
-          style={{ position: "absolute", ...folderPositions[i] }}
+          style={{
+            position: "absolute",
+            top: folderPositions[i].top,
+            left: folderPositions[i].left,
+            zIndex: 10,
+            touchAction: "none"
+          }}
         >
-          <FolderIcon
-            label={folder.label}
-            onClick={() => openOrFocusWindow({ type: "folder", name: folder.label })}
-          />
+          <motion.div
+            drag
+            dragMomentum={false}
+            dragConstraints={{
+              top: 30, left: 0,
+              right: window.innerWidth - 80,
+              bottom: window.innerHeight - 80,
+            }}
+            onDrag={(event, info) => handleFolderDrag(i, event, info)}
+            className="cursor-move select-none"
+            style={{ touchAction: "none" }}
+            whileDrag={{ scale: 1.1 }}
+          >
+            <FolderIcon
+              label={folder.label}
+              onClick={() => openOrFocusWindow({ type: "folder", name: folder.label })}
+            />
+          </motion.div>
         </div>
       ))}
 
@@ -77,7 +114,7 @@ export const MacDesktop: React.FC = () => {
             open={true}
             onClose={() => closeWindow(w)}
             appName={w.type === "app" ? w.name : w.name + " Folder"}
-            zIndex={10 + i}
+            zIndex={20 + i}
             style={{
               left: `calc(50% + ${i * 30}px)`,
               top: `calc(15% + ${i * 24}px)`,
