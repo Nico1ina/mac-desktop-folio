@@ -5,6 +5,7 @@ import { FolderIcon } from "./FolderIcon";
 import { MacWindow } from "./MacWindow";
 import { AnimatePresence, motion } from "framer-motion";
 import TopNavbar from "./TopNavbar";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Folders list (can extend with more info/content)
 const desktopFolders = [
@@ -38,6 +39,7 @@ export const MacDesktop: React.FC = () => {
   const [openWindows, setOpenWindows] = useState<{ type: "app" | "folder", name: string }[]>([]);
   // Add draggable folder positions
   const [folderPositions, setFolderPositions] = useState<{top: number, left: number}[]>(folderInitialPositions);
+  const isMobile = useIsMobile();
 
   // Bring window to front by reordering
   const openOrFocusWindow = (payload: { type: "app" | "folder", name: string }) => {
@@ -70,6 +72,19 @@ export const MacDesktop: React.FC = () => {
     });
   };
 
+  // Adjust folder layout for mobile
+  const getMobileFolderLayout = (index: number) => {
+    if (isMobile) {
+      const row = Math.floor(index / 3);
+      const col = index % 3;
+      return {
+        top: 90 + row * 100,
+        left: 20 + col * (window.innerWidth - 40) / 3
+      };
+    }
+    return folderPositions[index];
+  };
+
   return (
     <div className="relative min-h-screen w-full bg-gradient-to-br from-blue-100 via-indigo-100 to-purple-100 dark:from-[#1A1F2C] dark:via-[#222438] dark:to-[#31275B] transition-colors duration-500 overflow-hidden">
       <TopNavbar />
@@ -79,21 +94,21 @@ export const MacDesktop: React.FC = () => {
           key={folder.label}
           style={{
             position: "absolute",
-            top: folderPositions[i].top,
-            left: folderPositions[i].left,
+            top: getMobileFolderLayout(i).top,
+            left: getMobileFolderLayout(i).left,
             zIndex: 10,
             touchAction: "none"
           }}
         >
           <motion.div
-            drag
+            drag={!isMobile}
             dragMomentum={false}
             dragConstraints={{
               top: 30, left: 0,
               right: window.innerWidth - 80,
               bottom: window.innerHeight - 80,
             }}
-            onDrag={(event, info) => handleFolderDrag(i, event, info)}
+            onDrag={(event, info) => !isMobile && handleFolderDrag(i, event, info)}
             className="cursor-move select-none"
             style={{ touchAction: "none" }}
             whileDrag={{ scale: 1.1 }}
@@ -115,7 +130,7 @@ export const MacDesktop: React.FC = () => {
             onClose={() => closeWindow(w)}
             appName={w.type === "app" ? w.name : w.name + " Folder"}
             zIndex={20 + i}
-            style={{
+            style={isMobile ? {} : {
               left: `calc(50% + ${i * 30}px)`,
               top: `calc(15% + ${i * 24}px)`,
               minWidth: 340,
@@ -133,7 +148,6 @@ export const MacDesktop: React.FC = () => {
 
       {/* Desktop overlay for click-out in mobile */}
       <div className="fixed inset-0 pointer-events-none" />
-      {/* Optional: add clock/menu bar at the top if you want the true Mac look */}
     </div>
   );
 };
