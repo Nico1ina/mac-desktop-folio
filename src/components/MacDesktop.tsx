@@ -36,34 +36,24 @@ const appContent: Record<string, React.ReactNode> = {
 };
 
 export const MacDesktop: React.FC = () => {
-  const [openWindows, setOpenWindows] = useState<{ type: "app" | "folder", name: string }[]>([]);
-  // Add draggable folder positions
+  // Only allow one open window at a time for responsiveness and focus
+  const [openWindow, setOpenWindow] = useState<{ type: "app" | "folder", name: string } | null>(null);
   const [folderPositions, setFolderPositions] = useState<{top: number, left: number}[]>(folderInitialPositions);
   const isMobile = useIsMobile();
 
-  // Bring window to front by reordering
+  // When opening, close any existing window and open new one
   const openOrFocusWindow = (payload: { type: "app" | "folder", name: string }) => {
-    setOpenWindows((prev) => {
-      // If already open, bring to front
-      const exists = prev.findIndex(w => w.type === payload.type && w.name === payload.name);
-      if (exists !== -1) {
-        const updated = [...prev];
-        const [win] = updated.splice(exists, 1);
-        return [...updated, win];
-      }
-      return [...prev, payload];
-    });
+    setOpenWindow(payload);
   };
 
-  const closeWindow = (payload: { type: "app" | "folder", name: string }) => {
-    setOpenWindows((prev) => prev.filter(w => !(w.type === payload.type && w.name === payload.name)));
+  const closeWindow = () => {
+    setOpenWindow(null);
   };
 
-  // Draggable logic for folders
+  // Draggable folders for desktop, static grid for mobile
   const handleFolderDrag = (i: number, event: any, info: { point: { x: number; y: number } }) => {
     setFolderPositions((prev) => {
       const updated = [...prev];
-      // Clamp to desktop area (min 0, max desktop)
       updated[i] = {
         top: Math.max(60, Math.min(info.point.y, window.innerHeight - 100)),
         left: Math.max(12, Math.min(info.point.x, window.innerWidth - 90))
@@ -72,7 +62,7 @@ export const MacDesktop: React.FC = () => {
     });
   };
 
-  // Adjust folder layout for mobile
+  // Organize folders in grid for mobile, free drag for desktop
   const getMobileFolderLayout = (index: number) => {
     if (isMobile) {
       const row = Math.floor(index / 3);
@@ -88,7 +78,7 @@ export const MacDesktop: React.FC = () => {
   return (
     <div className="relative min-h-screen w-full bg-gradient-to-br from-blue-100 via-indigo-100 to-purple-100 dark:from-[#1A1F2C] dark:via-[#222438] dark:to-[#31275B] transition-colors duration-500 overflow-hidden">
       <TopNavbar />
-      {/* Desktop Folders (Draggable) */}
+      {/* Desktop Folders (Draggable on desktop, grid layout on mobile) */}
       {desktopFolders.map((folder, i) => (
         <div
           key={folder.label}
@@ -121,26 +111,21 @@ export const MacDesktop: React.FC = () => {
         </div>
       ))}
 
-      {/* All Open Windows */}
+      {/* Only allow one open window */}
       <AnimatePresence>
-        {openWindows.map((w, i) => (
+        {openWindow && (
           <MacWindow
-            key={w.type + "-" + w.name}
+            key={openWindow.type + "-" + openWindow.name}
             open={true}
-            onClose={() => closeWindow(w)}
-            appName={w.type === "app" ? w.name : w.name + " Folder"}
-            zIndex={20 + i}
-            style={isMobile ? {} : {
-              left: `calc(50% + ${i * 30}px)`,
-              top: `calc(15% + ${i * 24}px)`,
-              minWidth: 340,
-            }}
+            onClose={closeWindow}
+            appName={openWindow.type === "app" ? openWindow.name : openWindow.name + " Folder"}
+            zIndex={50} // keep on top of icons
           >
-            {w.type === "app"
-              ? appContent[w.name] ?? <div>Coming soon</div>
-              : desktopFolders.find(f => f.label === w.name)?.content ?? <div>Folder</div>}
+            {openWindow.type === "app"
+              ? appContent[openWindow.name] ?? <div>Coming soon</div>
+              : desktopFolders.find(f => f.label === openWindow.name)?.content ?? <div>Folder</div>}
           </MacWindow>
-        ))}
+        )}
       </AnimatePresence>
 
       {/* Dock */}
@@ -153,3 +138,4 @@ export const MacDesktop: React.FC = () => {
 };
 
 export default MacDesktop;
+
