@@ -3,24 +3,24 @@ import React, { useEffect, useState } from "react";
 import { Clock } from "lucide-react";
 import { format } from "date-fns";
 
-const CEST_OFFSET = 2; // Central European Summer Time is UTC+2
+const SWEDEN_TIMEZONE_OFFSET = 2; // Swedish time is UTC+2 (CEST)
 
-function getCESTDate() {
+function getSwedishDate() {
   const now = new Date();
-  // Get UTC, add CEST offset in hours
-  const cest = new Date(now.getTime() + (now.getTimezoneOffset() + (CEST_OFFSET * -60)) * 60000);
-  return cest;
+  // Get UTC, add Sweden's timezone offset in hours
+  const swedenTime = new Date(now.getTime() + (now.getTimezoneOffset() + (SWEDEN_TIMEZONE_OFFSET * -60)) * 60000);
+  return swedenTime;
 }
 
-function getCESTString(d: Date) {
+function getSwedishTimeString(d: Date) {
   return format(d, "eee, MMM d, yyyy HH:mm");
 }
 
 export const TopNavbar: React.FC = () => {
-  const [now, setNow] = useState<Date>(getCESTDate());
+  const [now, setNow] = useState<Date>(getSwedishDate());
 
   useEffect(() => {
-    const interval = setInterval(() => setNow(getCESTDate()), 1000);
+    const interval = setInterval(() => setNow(getSwedishDate()), 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -43,7 +43,7 @@ export const TopNavbar: React.FC = () => {
       </div>
       <div className="flex items-center gap-2 text-gray-700 dark:text-gray-100 font-mono text-xs">
         <Clock className="w-4 h-4 mr-1 opacity-70" />
-        {getCESTString(now)}&nbsp;CEST
+        {getSwedishTimeString(now)}&nbsp;CEST
       </div>
     </div>
   );
